@@ -15,8 +15,10 @@ N = len(param_grid) # number of samples
 
 def runner(index):
     """Function to compute the Chempy predictions for each parameter set"""
+    b=ModelParameters()
     params=param_grid[index]
-    abun,els=run_Chempy_sample(params,a);
+    abun,els=run_Chempy_sample(params,b);
+    del b;
     return abun
 
 if __name__=='__main__':
@@ -28,7 +30,7 @@ if __name__=='__main__':
     # Now run multiprocessing
     cpus=mp.cpu_count()
     p=mp.Pool(min(16,cpus))
-    output=list(tqdm.tqdm(p.imap(runner,range(N)),total=N))
+    output=list(tqdm.tqdm(p.imap(runner,range(440,N)),total=N-440))
     
     end_time=time.time()
     
