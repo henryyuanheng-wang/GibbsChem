@@ -16,15 +16,17 @@ class ModelParameters(object):
 	end = 13.5	
 	
 	#elements_to_trace = ['Al', 'Ar', 'C', 'Ca', 'Cl', 'Co', 'Cr', 'Cu', 'F', 'Fe', 'Ga', 'Ge', 'H', 'He', 'K', 'Mg', 'Mn', 'N', 'Na', 'Ne', 'Ni', 'O', 'P', 'S', 'Sc', 'Si', 'Ti', 'V', 'Zn']
-	elements_to_trace = ['C', 'Fe', 'H', 'He', 'Mg', 'N', 'Ne', 'O', 'Si']
+	#elements_to_trace = ['C', 'Fe', 'H', 'He', 'Mg', 'N', 'Ne', 'O', 'Si']
+	elements_to_trace = ['Al', 'C', 'Ca', 'Fe', 'H', 'K', 'Mg', 'Mn', 'N', 'Na', 'Ni', 'O', 'S', 'Si', 'Ti', 'V'] # for APOGEE
 	
 	## List of all names initially output by neural network
 	#initial_neural_names = ['Al', 'Ar', 'C', 'Ca', 'Cl', 'Co', 'Cr', 'Cu', 'F', 'Fe', 'Ga', 'Ge', 'He', 'K', 'Mg', 'Mn', 'N', 'Na', 'Ne', 'Ni', 'O', 'P', 'S', 'Sc', 'Si', 'Ti', 'V', 'Zn']
-	initial_neural_names = ['C','Fe','He','Mg','N','Ne','O','Si']
+	#initial_neural_names = ['C','Fe','He','Mg','N','Ne','O','Si']
+	initial_neural_names = ['Al', 'C', 'Ca', 'Fe', 'K', 'Mg', 'Mn', 'N', 'Na', 'Ni', 'O', 'S', 'Si', 'Ti', 'V'] # for APOGEE
 	
 	## Choice of yield sets
 	yield_table_name_sn2_list = ['chieffi04','Nugrid','Nomoto2013','Portinari_net', 'chieffi04_net', 'Nomoto2013_net','NuGrid_net','West17_net','TNG_net','CL18_net']#'Frischknecht16_net'
-	yield_table_name_sn2_index = 8
+	yield_table_name_sn2_index = 9
 	yield_table_name_sn2 = yield_table_name_sn2_list[yield_table_name_sn2_index]
 
 	yield_table_name_hn_list = ['Nomoto2013']
@@ -32,15 +34,15 @@ class ModelParameters(object):
 	yield_table_name_hn = yield_table_name_hn_list[yield_table_name_hn_index]
 
 	yield_table_name_agb_list = ['Karakas','Nugrid','Karakas_net_yield','Ventura_net','Karakas16_net','TNG_net'] # Karakas2016 needs much more calculational resources (order of magnitude) using 2010 net yields from Karakas are faster and only N is significantly underproduced
-	yield_table_name_agb_index = 5
+	yield_table_name_agb_index = 2
 	yield_table_name_agb = yield_table_name_agb_list[yield_table_name_agb_index]
 
 	yield_table_name_1a_list = ['Iwamoto','Thielemann','Seitenzahl', 'TNG']
-	yield_table_name_1a_index = 3
+	yield_table_name_1a_index = 2
 	yield_table_name_1a = yield_table_name_1a_list[yield_table_name_1a_index]
 
 	## Neural network parameters
-	UseNeural = True # This defines whether to use trained network in place of Chempy
+	UseNeural = False # This defines whether to use trained network in place of Chempy
 	
 	training_size = 10 #10 # no. values per parameter in training set
 	training_widths = [0.6,0.6,0.6,0.2,0.2] # 2 sigma widths
@@ -52,8 +54,8 @@ class ModelParameters(object):
 
 	## Free parameters - if some parameter is in to optimise there needs to be a prior and constraints defined
 	
-	SSP_parameters =  [1.0,-2.3,-2.75]#[1.0,-2.29]#[5.0,,1.0,-2.29 ,-2.75,	-0.8 ,0.2, 0.7, 0.3, 0.0]
-	SSP_parameters_to_optimize = ['log10_beta','high_mass_slope','log10_N_0']#['log10_beta','high_mass_slope'] #['beta_param', 'log10_beta','high_mass_slope', 'log10_N_0' 'log10_sn1a_time_delay','log10_sfr_factor_for_cosmic_accretion','log10_gas_reservoir_mass_factor','log10_a_parameter','log10_gas_power']
+	SSP_parameters =  [-2.3,-2.75]#[1.0,-2.29]#[5.0,,1.0,-2.29 ,-2.75,	-0.8 ,0.2, 0.7, 0.3, 0.0]
+	SSP_parameters_to_optimize = ['high_mass_slope','log10_N_0']#['log10_beta','high_mass_slope'] #['beta_param', 'log10_beta','high_mass_slope', 'log10_N_0' 'log10_sn1a_time_delay','log10_sfr_factor_for_cosmic_accretion','log10_gas_reservoir_mass_factor','log10_a_parameter','log10_gas_power']
 	assert len(SSP_parameters) == len(SSP_parameters_to_optimize)
 	ISM_parameters =  [-0.3,0.55,	0.5]#, 0.3,0.2, 0.7, 0.3, 0.0]
 	ISM_parameters_to_optimize = ['log10_starformation_efficiency', 'log10_sfr_scale', 'outflow_feedback_fraction']#,'log10_gas_reservoir_mass_factor','log10_sfr_factor_for_cosmic_accretion','log10_a_parameter','log10_gas_power']
@@ -167,7 +169,7 @@ class ModelParameters(object):
 	mburn = 1
 	save_state_every = 1
 	m = 1000 # For 7 free parameters 300 iterations are usually enough. The mcmc routine is stopping after 300 if the posterior mean is converged for more than 200 iterations.
-	error_marginalization = True # Marginalizing over the model error or using the best model error value
+	error_marginalization = False # Marginalizing over the model error or using the best model error value
 	flat_model_error_prior = [0.,1.,51] # Flat prior for the error marginalization [begin, end, number of evaluations inbetween]
 	beta_param = 1.
 	# This is the rescalable beta parameter controlling model error (default is 10)

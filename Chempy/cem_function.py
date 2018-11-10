@@ -81,6 +81,54 @@ def lognorm(x,mu,factor):
 	y = gaussian(y,0.,1.)
 	return y
 
+def shorten_sfr_custom(a,log_age):
+	'''
+	This function crops the SFR to the length of the age of the star and ensures that enough stars are formed at the stellar birth epoch
+
+	INPUT:
+
+	   a = Modelparameters
+	   log_age = ln(Age of star in Gyr)
+
+	OUTPUT:
+	
+	   the function will update the modelparameters, such that the simulation will end when the star is born and it will also check whether there is enough sfr left at that epoch
+	'''
+	age_of_star = np.exp(log_age)
+	assert (age_of_star <= 13.0), "Age of the star must be below 13Gyr"
+	basic_sfr = SFR(a.start,a.end,a.time_steps)
+	if a.basic_sfr_name == 'gamma_function':
+		getattr(basic_sfr, a.basic_sfr_name)(S0 = a.S_0 * a.mass_factor,a_parameter = a.a_parameter, loc = a.sfr_beginning, scale = a.sfr_scale)
+	elif a.basic_sfr_name == 'model_A':
+		basic_sfr.model_A(a.mass_factor*a.S_0,a.t_0,a.t_1)
+	elif a.basic_sfr_name == 'prescribed':
+		basic_sfr.prescribed(a.mass_factor, a.name_of_file)
+	elif a.basic_sfr_name == 'doubly_peaked':
+		basic_sfr.doubly_peaked(S0 = a.mass_factor*a.S_0, peak_ratio = a.peak_ratio, decay = a.sfr_decay, t0 = a.sfr_t0, peak1t0 = a.peak1t0, peak1sigma = a.peak1sigma)
+	basic_sfr.sfr = a.total_mass * np.divide(basic_sfr.sfr,sum(basic_sfr.sfr))
+	mass_normalisation = a.total_mass
+	mean_sfr = sum(basic_sfr.sfr) / a.end
+	
+	# at which time in the simulation is the star born
+	star_time = basic_sfr.t[-1] - age_of_star
+	cut = [np.where(np.abs(basic_sfr.t - star_time) == np.min(np.abs(basic_sfr.t - star_time)))]
+	if len(cut[0][0]) != 1:
+		cut = cut[0][0][0]
+	
+	# updating the end time and the model steps and rescale the total mass
+	time_model = float(basic_sfr.t[cut])
+	a.end = time_model
+	a.time_steps = int(cut[0][0]) + 1
+	a.total_mass = sum(basic_sfr.sfr[0:a.time_steps])
+
+	# check whether the sfr is enough at end to produce reasonable number of stars (which is necessary in order to have a probability to observe a star at all)
+	sfr_at_end = float(basic_sfr.sfr[cut] / basic_sfr.dt)
+	fraction_of_mean_sfr = sfr_at_end / mean_sfr 	
+	assert fraction_of_mean_sfr > 0.05, ('The total SFR of the last age bin is below 5% of the mean SFR', 'stellar identifier = ', a.stellar_identifier, 'star time = ', star_time, 'model time = ', time_model ) 
+	return a
+
+
+
 def shorten_sfr(a):
 	'''
 	This function crops the SFR to the length of the age of the star and ensures that enough stars are formed at the stellar birth epoch
@@ -390,6 +438,48 @@ def cem_real2(a):
 		elements_to_trace.append('SNratio')
 
 	return(abundance_list,elements_to_trace)
+
+
+def cem_real2_gibbs(a,log_age):
+    '''
+    This is for use with the Gibbs sampler to create the training dataset. The age of the star (in ln(Gyr) is an input)
+    real chempy function. description can be found in cem2. \
+    '''
+    ## The time until which Chempy is calculated is cropped to the stellar birth time. Also the SFR should not be below 1/20th of the mean SFR
+    a = shorten_sfr_custom(a,log_age)
+    basic_solar = solar_abundances()
+    getattr(basic_solar, a.solar_abundance_name)()
+    elements_to_trace = list(a.elements_to_trace)
+    ### Model is calculated
+    if a.UseNeural==True:
+        raise Exception("Must turn off neural network for Gibbs testing")
+    _, abundances = Chempy(a)
+    abundance_list = []
+    el_list = []
+    for item in elements_to_trace:
+        if item!='H':
+            el_list.append(item)
+            # Don't need this in code since tracked by Fe
+            abundance_list.append(abundances[item][-1])
+    return abundance_list,el_list
+
+
+def run_Chempy_sample(parameter_set,a):
+    log_age=parameter_set[-1]
+    # Update non-age parameters
+    a = extract_parameters_and_priors(parameter_set[:-1],a)
+    
+    # The endtime is changed for the actual calculation but restored to default afterwards
+    backup = a.end ,a.time_steps, a.total_mass
+
+    # call Chempy and return the abundances at the end of the simulation = time of star's birth and the corresponding element names as a list
+    abundance_list,el_list = cem_real2_gibbs(a,log_age)
+    
+    # Restore defaults
+    a.end ,a.time_steps, a.total_mass = backup
+    
+    return abundance_list,el_list
+
 
 
 def posterior_function(changing_parameter,a):
@@ -704,6 +794,9 @@ def extract_parameters_and_priors(changing_parameter, a):
 	for i,item in enumerate(a.to_optimize):
 		setattr(a, item, changing_parameter[i])
 		val = getattr(a, item)
+		
+    # Now update stellar time:
+    
 
 	start_time = time.time()
 	### PRIOR calculation, values are stored in parameter.py
