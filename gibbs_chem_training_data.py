@@ -27,7 +27,7 @@ if __name__=='__main__':
     
     # Now run multiprocessing
     cpus=mp.cpu_count()
-    p=mp.Pool(min(10,cpu_count))
+    p=mp.Pool(min(16,cpus))
     output=list(tqdm.tqdm(p.imap(runner,range(N)),total=N))
     
     end_time=time.time()
