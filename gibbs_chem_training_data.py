@@ -26,7 +26,7 @@ if __name__=='__main__':
     _,els=run_Chempy_sample(param_grid[0],a)
     
     # Now run multiprocessing
-    cpus=mp.cpu_count
+    cpus=mp.cpu_count()
     p=mp.Pool(min(10,cpu_count))
     output=list(tqdm.tqdm(p.imap(runner,range(N)),total=N))
     
